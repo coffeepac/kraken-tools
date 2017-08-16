@@ -1,9 +1,11 @@
 // Configuration variables
-github_org             = "samsung-cnct"
-quay_org               = "samsung_cnct"
+github_org             = "coffeepac" // "samsung-cnct"
+quay_org               = "coffeepac" // "samsung_cnct"
+publish_branch         = "faux_mas"  // "master"
+image_tag              = "${env.RELEASE_VERSION} ?: latest"
 
 podTemplate(label: 'k2-tools', containers: [
-    containerTemplate(name: 'jnlp', image: "quay.io/${quay_org}/custom-jnlp:0.1", args: '${computer.jnlpmac} ${computer.name}'),
+    containerTemplate(name: 'jnlp', image: "quay.io/samsung_cnct/custom-jnlp:0.1", args: '${computer.jnlpmac} ${computer.name}'),
     containerTemplate(name: 'docker', image: 'docker', command: 'cat', ttyEnabled: true)
   ], volumes: [
     hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
@@ -37,11 +39,11 @@ podTemplate(label: 'k2-tools', containers: [
                 )
             }
 
-            // only push from master.   assume we are on samsung-cnct fork
+            // only push from master.   check that we are on samsung-cnct fork
             stage('Publish') {
-              if (env.BRANCH_NAME == "master" && git_uri.contains(github_org)) {
-                kubesh "docker tag k2-tools:${env.JOB_BASE_NAME}.${env.BUILD_ID} quay.io/${quay_org}/k2-tools:latest"
-                kubesh "docker push quay.io/${quay_org}/k2-tools:latest"
+              if (env.BRANCH_NAME == publish_branch && git_uri.contains(github_org)) {
+                kubesh "docker tag k2-tools:${env.JOB_BASE_NAME}.${env.BUILD_ID} quay.io/${quay_org}/k2-tools:${image_tag}"
+                kubesh "docker push quay.io/${quay_org}/k2-tools:${image_tag}"
               } else {
                 echo "Not pushing to docker repo:\n    BRANCH_NAME='${env.BRANCH_NAME}'\n    git_uri='${git_uri}'"
               }
